@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--namespace:和接口一一对应-->
+<mapper namespace="cn.bdqn.springbootdemo.dao.UserDao">
+
+    <resultMap id="UserMap" type="User">
+        <id property="userId" column="userId"></id>
+        <result property="userName" column="userName"></result>
+        <result property="userPwd" column="userPwd"></result>
+        <result property="realName" column="realName"></result>
+        <association property="userRole" column="userRole" javaType="Role">
+            <id property="roleId" column="userRole"></id>
+            <result property="roleName" column="roleName"></result>
+        </association>
+    </resultMap>
+
+    <select id="queryByName" resultMap="UserMap">
+        select *
+        from tbl_user u inner join tbl_role r on u.userRole = r.role_id
+        where userName=#{userName}
+    </select>
+
+    <insert id="save" useGeneratedKeys="true" keyProperty="userId">
+        INSERT  into tbl_user(userName,userpwd,realName,userRole)
+        VALUES (#{userName},#{userPwd},#{realName},#{userRole.roleId})
+    </insert>
+
+
+</mapper>

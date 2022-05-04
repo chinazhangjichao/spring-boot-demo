@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spring Boot</title>
+    <link rel="stylesheet" type="text/css" href="./css/element-ui.css" >
+</head>
+<body>
+    <div id="app">
+        <div>
+            <el-form :inline="true" >
+
+                <el-form-item>
+                    <el-select v-model="type" placeholder="选择类别" clearable>
+                        <el-option v-for="item in newsTypes" :label="item.typeName" :value="item.typeId"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item >
+                    <el-input v-model="keyword" placeholder="关键字"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="handleSearch">查询</el-button>
+                    <el-button type="info" @click="handleClear">清空</el-button>
+                </el-form-item>
+            </el-form>
+        </div>
+        <div>
+            <el-button type="primary" @click="handleCreate">添加</el-button>
+        </div>
+        <div>
+            <template>
+                <el-table :data="tableData" border stripe style="width: 100%">
+                    <el-table-column  prop="newsId" label="ID"  width="60"></el-table-column>
+                    <el-table-column prop="newsImg" >
+                        <template slot-scope="scope">
+                            <el-image :src="formatPath(scope.row.newsImg)"></el-image>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="newsTitle"label="新闻标题"></el-table-column>
+                    <el-table-column prop="newsType.typeName" label="新闻类别" width="100">
+                    </el-table-column>
+                    <el-table-column prop="sendUser.realName" label="发布人" width="100">
+                    </el-table-column>
+                    <el-table-column prop="sendTime" label="发布日期" width="100">
+                        <template slot-scope="scope">
+                            {{formatDate(scope.row.sendTime)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column
+                            fixed="right"
+                            label="操作"
+                            width="150">
+                        <template slot-scope="scope">
+                            <el-button type="success" size="small" @click="handleEdit(scope.row)">编辑</el-button>
+                            <el-button @click="handleDelete(scope.row,scope.$index)" type="danger" size="small">删除</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <el-pagination
+                        background
+                        layout="total, sizes, prev, pager, next"
+                        @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange"
+                        :current-page="pageNo"
+                        :page-size="pageSize"
+                        :total="count">
+                </el-pagination>
+            </template>
+        </div>
+    </div>
+    <script type="text/javascript" src="./js/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript" src="./js/vue.min.js"></script>
+    <script type="text/javascript" src="./js/element-ui.js"></script>
+    <script type="text/javascript">
+        new Vue({
+            el:'#app',
+            data:{
+                type:null,
+                keyword:'',
+                pageNo:1,
+                pageSize:10,
+                count:0,
+                tableData: [],
+                newsTypes:[]
+            },
+            methods:{
+                formatPath:function (url) {
+                    if(null==url) return '';
+                    return '/upload/'+url;
+                },
+                formatDate:function (v) {
+                    if(null==v || ''==v || undefined==v)return '';
+                  var date = new Date(v);
+                  var y  =date.getFullYear();
+                  var m = date.getMonth()+1;
+                  var d = date.getDate();
+                  return y+"-"+this.formatNum(m)+"-"+this.formatNum(d);
+                },
+                formatNum:function (n) {
+                  return n>=10?n:'0'+n;
+                },
+                handleCreate:function () {
+                    location.href="./edit.html";
+                },
+                handleEdit:function (row) {
+                    location.href="./edit.html?id="+row.newsId;
+                },
+                handleSizeChange:function(val) {
+                    this.pageSize=val;
+                    this.loadData();
+                },
+                handleCurrentChange:function(val) {
+                    this.pageNo=val;
+                    this.loadData();
+                },
+                handleSearch:function () {
+                    this.pageNo=1;
+                    this.loadData();
+                },
+                handleClear:function() {
+                    this.type=null;
+                    this.keyword='';
+                    this.handleSearch();
+                },
+                handleDelete:function (row,index) {
+                    var that =this;
+                    $.getJSON("/news/delete",{id:row.newsId},function (res) {
+                        if(res.code=="success"){
+                            that.tableData.splice(index,1);
+                        }else if(res.code=="login"){
+                            location.href="./login.html";
+                        }else{
+                            that.$message.error(res.message);
+                        }
+                    });
+                },
+                loadTypes:function () {
+                    var that =this;
+                    $.getJSON("/nt/all",{},function (res) {
+                        if(res.code=="success"){
+                            that.newsTypes=res.data;
+                        }else if(res.code=="login"){
+                            location.href="./login.html";
+                        }
+                    });
+                },
+                loadData:function () {
+                    var that =this;
+                    $.getJSON("/news/page",{
+                        pageNo:this.pageNo,
+                        pageSize:this.pageSize,
+                        type:this.type,
+                        keyword:this.keyword
+                    },function (res) {
+                        if(res.code=="success"){
+                            that.tableData=res.data.list;
+                            that.pageNo=res.data.pageNo;
+                            that.pageSize=res.data.pageSize;
+                            that.count=res.data.count;
+                        }else if(res.code=="login"){
+                            location.href="./login.html";
+                        }
+                    });
+                }
+            },
+            mounted:function () {
+                this.loadData();
+                this.loadTypes();
+            }
+        });
+
+    </script>
+
+
+</body>
+</html>

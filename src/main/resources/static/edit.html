@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spring Boot</title>
+    <link rel="stylesheet" type="text/css" href="./css/element-ui.css" >
+    <style type="text/css">
+    .avatar-uploader .el-upload {
+        border: 1px dashed #d9d9d9;
+        border-radius: 6px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    .avatar-uploader .el-upload:hover {
+        border-color: #409EFF;
+    }
+    .avatar-uploader-icon {
+        font-size: 28px;
+        color: #8c939d;
+        width: 178px;
+        height: 178px;
+        line-height: 178px;
+        text-align: center;
+    }
+    .avatar {
+        width: 178px;
+        height: 178px;
+        display: block;
+    }
+
+</style>
+</head>
+<body>
+    <div id="app">
+        <div>
+            <el-form >
+                <el-form-item label="新闻图片">
+                    <el-upload
+                            class="avatar-uploader"
+                            :action="uploadUrl"
+                            :show-file-list="false"
+                            :on-success="handleAvatarSuccess"
+                            :before-upload="beforeAvatarUpload">
+                        <img v-if="obj.newsImg" :src="formatPath(obj.newsImg)" class="avatar">
+                        <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                    </el-upload>
+                </el-form-item>
+                <el-form-item label="新闻标题">
+                    <el-input v-model="obj.newsTitle" ref="newsTitle" placeholder="请输入新闻标题"></el-input>
+                </el-form-item>
+                <el-form-item label="新闻类别">
+                    <el-select v-model="obj.newsType.typeId" placeholder="请选择类别" >
+                        <el-option v-for="item in newsTypes" :label="item.typeName" :value="item.typeId"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="新闻详情">
+                    <el-input type="textarea" :rows="10" v-model="obj.newsContent" placeholder="请填写新闻详情"></el-input>
+                </el-form-item>
+                <el-form-item label="发布时间">
+                    <el-date-picker v-model="obj.sendTime" type="date" placeholder="选择日期">
+                    </el-date-picker>
+                </el-form-item>
+
+                <el-form-item>
+                    <el-button type="primary" @click="handleSave">保存</el-button>
+                    <el-button type="info" @click="handleBack">返回</el-button>
+                </el-form-item>
+            </el-form>
+        </div>
+    </div>
+    <script type="text/javascript" src="./js/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript" src="./js/vue.min.js"></script>
+    <script type="text/javascript" src="./js/element-ui.js"></script>
+    <script type="text/javascript">
+        new Vue({
+            el:'#app',
+            data:{
+                uploadUrl:'/news/upload',
+                obj:{newsId:0,sendTime:new Date(),newsType:{typeId:null},newsImg:''},
+                newsTypes:[]
+            },
+            methods:{
+                handleBack:function () {
+                    history.back();
+                },
+                formatPath:function (url) {
+                    return '/upload/'+url;
+                },
+                handleAvatarSuccess:function(res, file) {
+                    if(res.code=="success"){
+                        this.obj.newsImg = res.data.fileName;
+                    }else{
+                        this.$message.error(res.message);
+                    }
+                },
+                beforeAvatarUpload:function(file) {
+                    const isJPG = file.type === 'image/jpeg';
+                    const isLt2M = file.size / 1024 / 1024 < 2;
+
+                    if (!isJPG) {
+                        this.$message.error('上传头像图片只能是 JPG 格式!');
+                    }
+                    if (!isLt2M) {
+                        this.$message.error('上传头像图片大小不能超过 2MB!');
+                    }
+                    return isJPG && isLt2M;
+                },
+                handleSave:function () {
+                    if(null==this.obj.newsTitle || this.obj.newsTitle==''){
+                        this.$message.error('请填写新闻标题！');
+                        this.$refs.newsTitle.focus();
+                        return false;
+                    }
+                    if(null==this.obj.newsType.typeId){
+                        this.$message.error('请选择新闻类别！');
+                        return false;
+                    }
+                    
+                    var that = this;
+                    $.ajax({
+                        url:'/news/save',
+                        type:'post',
+                        data:JSON.stringify(this.obj),
+                        contentType:'application/json;charset=UTF-8',
+                        dataType:'json',
+                        success:function (res) {
+                            if(res.code=="success"){
+                                that.$message({message: res.message,type: 'success',close:function(){
+                                   // history.back();
+                                }});
+                            }else{
+                                that.$message.error(res.message);
+                            }
+                        }
+                        
+                    });
+                    
+                },
+                loadTypes:function () {
+                    var that =this;
+                    $.getJSON("/nt/all",{},function (res) {
+                        if(res.code=="success"){
+                            that.newsTypes=res.data;
+                        }
+                    });
+                },
+                loadData:function () {
+                    var that =this;
+                    $.getJSON("/news/load",{
+                        id:this.obj.newsId
+                    },function (res) {
+                        if(res.code=="success"){
+                            that.obj=res.data;
+                        }
+                    });
+                },
+                getQueryVariable:function(name) {
+                    const reg = new RegExp("(^|&)" + name+ "=([^&]*)(&|$)", "i");
+                    const result = window.location.search.substr(1).match(reg);
+                    if ( result != null ){
+                        return decodeURI(result[2]);
+                    }else{
+                        return null;
+                    }
+                }
+            },
+            mounted:function () {
+                var id = this.getQueryVariable("id");
+                if(null==id || isNaN(id)){
+                    this.obj.newsId=0;
+                }else{
+                    this.obj.newsId=parseInt(id);
+                }
+                this.loadData();
+                this.loadTypes();
+            }
+        });
+
+    </script>
+
+
+</body>
+</html>

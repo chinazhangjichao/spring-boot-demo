@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.bdqn.springbootdemo.dao.NewsInforDao">
+
+    <resultMap id="NewsInforMap" type="NewsInfor">
+        <id property="newsId" column="newsId"/>
+        <result property="newsTitle" column="newsTitle"/>
+        <result property="newsImg" column="newsImg"/>
+        <result property="newsContent" column="newsContent"/>
+        <result property="sendTime" column="sendTime"/>
+        <association property="newsType" column="newsType" javaType="NewsType">
+            <id property="typeId" column="typeId"/>
+            <result property="typeName" column="typeName"/>
+        </association>
+
+        <association property="sendUser" column="sendUser" javaType="User">
+            <id property="userId" column="userId"/>
+            <result property="realName" column="realName"/>
+        </association>
+    </resultMap>
+
+
+    <select id="queryByPage" resultMap="NewsInforMap">
+        select newsId,newsTitle,newsImg,sendTime,
+        typeId,typeName,userId,realName
+        from tbl_news_infor ni
+        inner join tbl_news_type nt on ni.newsType=nt.typeId
+        inner join tbl_User u on ni.sendUser=u.userId
+
+        <where>
+            <if test="null!=type and type>0">
+                and newsType=#{type}
+            </if>
+            <if test="null!=keyword and keyword!=''">
+                and newsTitle like CONCAT('%',#{keyword},'%')
+            </if>
+        </where>
+        order by newsId DESC
+        limit #{start},#{pageSize}
+    </select>
+    <select id="queryCount" resultType="int">
+      select count(newsId)
+      from tbl_news_infor ni
+        inner join tbl_news_type nt on ni.newsType=nt.typeId
+        inner join tbl_User u on ni.sendUser=u.userId
+        <where>
+            <if test="null!=type and type>0">
+                and newsType=#{type}
+            </if>
+            <if test="null!=keyword and keyword!=''">
+                and newsTitle like CONCAT('%',#{keyword},'%')
+            </if>
+        </where>
+    </select>
+
+    <select id="queryById" resultMap="NewsInforMap">
+        select *
+       from tbl_news_infor ni
+        inner join tbl_news_type nt on ni.newsType=nt.typeId
+        inner join tbl_User u on ni.sendUser=u.userId
+        where newsId=#{id}
+
+    </select>
+
+    <insert id="save" keyProperty="newsId" useGeneratedKeys="true">
+        insert into tbl_news_infor(newsTitle,newsImg,newsContent,newsType,sendUser,sendTime)
+        values(#{newsTitle},#{newsImg},#{newsContent},#{newsType.typeId},#{sendUser.userId},#{sendTime})
+    </insert>
+
+    <update id="update">
+        update tbl_news_infor
+        <set>
+            <if test="null!=newsTitle">newsTitle=#{newsTitle},</if>
+            <if test="null!=newsImg">newsImg=#{newsImg},</if>
+            <if test="null!=newsContent">newsContent=#{newsContent},</if>
+            <if test="null!=newsType">newsType=#{newsType.typeId},</if>
+            <if test="null!=sendUser">sendUser=#{sendUser.userId},</if>
+            <if test="null!=sendTime">sendTime=#{sendTime},</if>
+        </set>
+        where newsId=#{newsId}
+    </update>
+
+    <delete id="delete">
+        delete from tbl_news_infor
+        where newsId=#{newsId}
+    </delete>
+
+</mapper>
