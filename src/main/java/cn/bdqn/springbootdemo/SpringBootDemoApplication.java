@@ -15,6 +15,7 @@ import org.springframework.boot.web.servlet.ServletComponentScan;
 
 public class SpringBootDemoApplication {
     public static void main(String[] args) {
+        System.out.println("Hello GitHub!");
         SpringApplication.run(SpringBootDemoApplication.class,args);
     }
 }
